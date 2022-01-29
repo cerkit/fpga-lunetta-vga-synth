@@ -1,0 +1,83 @@
+// Author: unknown
+// www.TinyVGA.com
+
+module vga(clk, red,green,blue,hsync,vsync);
+
+// Input clk, 50 MHz Oscillator
+input clk;
+
+// VGA outputs
+output red;
+output green;
+output blue;
+output hsync;
+output vsync;
+
+reg [9:0] hcount;     // VGA horizontal counter
+reg [9:0] vcount;     // VGA vertical counter
+reg [2:0] data;		  // RGB data
+
+wire hcount_ov;
+wire vcount_ov;
+wire videosignal_active;
+wire hsync;
+wire vsync;
+reg  vga_clk;
+
+// VGA mode parameters
+parameter hsync_end   = 10'd95,
+   hdat_begin  = 10'd143,
+   hdat_end  = 10'd783,
+   hpixel_end  = 10'd799,
+   vsync_end  = 10'd1,
+   vdat_begin  = 10'd34,
+   vdat_end  = 10'd514,
+   vline_end  = 10'd524;
+
+
+always @(posedge clk)
+begin
+ vga_clk = ~vga_clk;
+end
+
+always @(posedge vga_clk)
+begin
+ if (hcount_ov)
+  hcount <= 10'd0;
+ else
+  hcount <= hcount + 10'd1;
+end
+
+assign hcount_ov = (hcount == hpixel_end);
+
+always @(posedge vga_clk)
+begin
+ if (hcount_ov)
+ begin
+  if (vcount_ov)
+   vcount <= 10'd0;
+  else
+   vcount <= vcount + 10'd1;
+ end
+end
+assign  vcount_ov = (vcount == vline_end);
+
+
+assign videosignal_active =    ((hcount >= hdat_begin) && (hcount < hdat_end))
+     && ((vcount >= vdat_begin) && (vcount < vdat_end));
+
+assign hsync = (hcount > hsync_end);
+assign vsync = (vcount > vsync_end);
+
+assign red = (videosignal_active) ?  data[0] : 0;
+assign green = (videosignal_active) ?  data[1] : 0;
+assign blue = (videosignal_active) ?  data[2] : 0;
+
+
+// generate "image"
+always @(posedge vga_clk)
+begin
+  data <= (vcount[2:0] ^ hcount[2:0]);
+end
+
+endmodule

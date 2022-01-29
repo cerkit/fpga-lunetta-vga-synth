@@ -4,3 +4,7 @@
 # When configure fails, SCons outputs these
 config.log
 .sconf_temp
+hardware.out
+hardware.bin
+hardware.blif
+*.history
